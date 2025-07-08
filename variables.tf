@@ -127,3 +127,27 @@ variable "clickhouse_keeper_memory" {
   type        = string
   default     = "2Gi"
 }
+
+variable "alb_scheme" {
+  description = "Scheme for the ALB (internal or internet-facing)"
+  type        = string
+  default     = "internet-facing"
+}
+
+variable "ingress_inbound_cidrs" {
+  description = "List of CIDR blocks allowed to access the ingress"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "redis_at_rest_encryption" {
+  description = "Whether at-rest encryption is enabled for the Redis cluster"
+  type        = bool
+  default     = false
+}
+
+variable "redis_multi_az" {
+  description = "Whether Multi-AZ is enabled for the Redis cluster"
+  type        = bool
+  default     = false
+}
