@@ -22,6 +22,10 @@ module "langfuse" {
   # e.g. when using the module multiple times on the same AWS account
   name   = "langfuse"
 
+  # Optional: Use existing ACM certificate instead of creating a new one
+  # This resolves DNS validation chicken-and-egg problems
+  # existing_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abcd1234-..."
+
   # Optional: Configure Langfuse
   # use_encryption_key = false # Disable encryption (default is true for security)
 
@@ -97,7 +101,20 @@ provider "helm" {
 
 You can also navigate into the `examples/quickstart` directory and run the example there.
 
-2. Apply the DNS zone
+### Option A: Using an existing ACM certificate (recommended)
+
+If you already have an ACM certificate for your domain (e.g., a wildcard certificate), you can use it directly:
+
+2. Set `existing_certificate_arn` in your module configuration and apply:
+
+```bash
+terraform init
+terraform apply
+```
+
+### Option B: Creating a new certificate and Route53 zone
+
+2. Apply the DNS zone first:
 
 ```bash
 terraform init
@@ -285,11 +302,12 @@ This module creates a complete Langfuse stack with the following components:
 |------------------------------|------------------------------------------------------------------------------------------------------------------|--------------|----------------------------------------|:--------:|
 | name                         | Name prefix for resources                                                                                        | string       | "langfuse"                             |    no    |
 | domain                       | Domain name used for resource naming                                                                             | string       | n/a                                    |   yes    |
+| existing_certificate_arn     | ARN of existing ACM certificate to use instead of creating a new one                                             | string       | null                                   |    no    |
 | vpc_cidr                     | CIDR block for VPC                                                                                               | string       | "10.0.0.0/16"                          |    no    |
 | vpc_id                       | ID of an existing VPC to reuse                                                                                   | string       | null                                   |    no    |
 | private_subnet_ids           | List of private subnet IDs (required when using existing VPC)                                                    | list(string) | null                                   |    no    |
 | public_subnet_ids            | List of public subnet IDs (required when using existing VPC)                                                     | list(string) | null                                   |    no    |
-| private_route_table_ids      | List of private route table IDs (optional when using existing VPC, for S3 VPC Gateway endpoint)                   | list(string) | null                                   |    no    |
+| private_route_table_ids      | List of private route table IDs (optional when using existing VPC, for S3 VPC Gateway endpoint)                  | list(string) | null                                   |    no    |
 | use_single_nat_gateway       | To use a single NAT Gateway (cheaper) or one per AZ (more resilient)                                             | bool         | true                                   |    no    |
 | kubernetes_version           | Kubernetes version for EKS cluster                                                                               | string       | "1.32"                                 |    no    |
 | use_encryption_key           | Whether to use an Encryption key for LLM API credential and integration credential store                         | bool         | true                                   |    no    |
@@ -299,7 +317,7 @@ This module creates a complete Langfuse stack with the following components:
 | postgres_max_capacity        | Maximum ACU capacity for PostgreSQL Serverless v2                                                                | number       | 2.0                                    |    no    |
 | cache_node_type              | ElastiCache node type                                                                                            | string       | "cache.t4g.small"                      |    no    |
 | cache_instance_count         | Number of ElastiCache instances                                                                                  | number       | 1                                      |    no    |
-| langfuse_helm_chart_version  | Version of the Langfuse Helm chart to deploy                                                                     | string       | "1.5.14"                                |    no    |
+| langfuse_helm_chart_version  | Version of the Langfuse Helm chart to deploy                                                                     | string       | "1.5.14"                               |    no    |
 | langfuse_cpu                 | CPU allocation for Langfuse containers                                                                           | string       | "2"                                    |    no    |
 | langfuse_memory              | Memory allocation for Langfuse containers                                                                        | string       | "4Gi"                                  |    no    |
 | langfuse_web_replicas        | Number of replicas for Langfuse web container                                                                    | number       | 1                                      |    no    |
@@ -317,17 +335,22 @@ This module creates a complete Langfuse stack with the following components:
 
 ## Outputs
 
-| Name                   | Description                      |
-|------------------------|----------------------------------|
-| cluster_name           | EKS Cluster Name                 |
-| cluster_host           | EKS Cluster endpoint             |
-| cluster_ca_certificate | EKS Cluster CA certificate       |
-| cluster_token          | EKS Cluster authentication token |
-| private_subnet_ids     | Private subnet IDs from VPC      |
-| public_subnet_ids      | Public subnet IDs from VPC       |
-| bucket_name            | S3 bucket name for Langfuse      |
-| bucket_id              | S3 bucket ID for Langfuse        |
-| route53_nameservers    | Route53 zone nameservers         |
+| Name                   | Description                                           |
+|------------------------|-------------------------------------------------------|
+| cluster_name           | EKS Cluster Name                                      |
+| cluster_host           | EKS Cluster endpoint                                  |
+| cluster_ca_certificate | EKS Cluster CA certificate                            |
+| cluster_token          | EKS Cluster authentication token                      |
+| vpc_id                 | VPC ID                                                |
+| private_subnet_ids     | Private subnet IDs from VPC                           |
+| public_subnet_ids      | Public subnet IDs from VPC                            |
+| private_route_table_ids| Private route table IDs from VPC                      |
+| bucket_name            | S3 bucket name for Langfuse                           |
+| bucket_id              | S3 bucket ID for Langfuse                             |
+| route53_nameservers    | Route53 zone nameservers (only when zone is created)  |
+| certificate_arn        | ARN of the ACM certificate being used                 |
+| load_balancer_dns_name | DNS name of the ALB created by the ingress controller |
+| load_balancer_zone_id  | Zone ID of the ALB created by the ingress controller  |
 
 ## Support
 
