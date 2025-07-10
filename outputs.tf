@@ -25,6 +25,11 @@ output "route53_nameservers" {
   value       = var.existing_certificate_arn == null ? aws_route53_zone.zone[0].name_servers : null
 }
 
+output "vpc_id" {
+  description = "VPC ID"
+  value       = local.vpc_id
+}
+
 output "private_subnet_ids" {
   description = "Private subnet IDs from the VPC module"
   value       = local.private_subnets
@@ -33,6 +38,11 @@ output "private_subnet_ids" {
 output "public_subnet_ids" {
   description = "Public subnet IDs from the VPC module"
   value       = local.public_subnets
+}
+
+output "private_route_table_ids" {
+  description = "Private route table IDs from the VPC module"
+  value       = local.private_route_table_ids
 }
 
 output "bucket_name" {
