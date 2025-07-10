@@ -237,6 +237,7 @@ This module creates a complete Langfuse stack with the following components:
 | cluster_host           | EKS Cluster endpoint             |
 | cluster_ca_certificate | EKS Cluster CA certificate       |
 | cluster_token          | EKS Cluster authentication token |
+| vpc_id                 | VPC ID                           |
 | private_subnet_ids     | Private subnet IDs from VPC      |
 | public_subnet_ids      | Public subnet IDs from VPC       |
 | bucket_name            | S3 bucket name for Langfuse      |

@@ -25,6 +25,11 @@ output "route53_nameservers" {
   value       = aws_route53_zone.zone.name_servers
 }
 
+output "vpc_id" {
+  description = "VPC ID"
+  value       = module.vpc.vpc_id
+}
+
 output "private_subnet_ids" {
   description = "Private subnet IDs from the VPC module"
   value       = module.vpc.private_subnets
