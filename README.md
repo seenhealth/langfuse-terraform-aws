@@ -258,6 +258,7 @@ This module creates a complete Langfuse stack with the following components:
 | vpc_id                 | VPC ID                                                 |
 | private_subnet_ids     | Private subnet IDs from VPC                            |
 | public_subnet_ids      | Public subnet IDs from VPC                             |
+| private_route_table_ids | Private route table IDs from VPC                       |
 | bucket_name            | S3 bucket name for Langfuse                            |
 | bucket_id              | S3 bucket ID for Langfuse                              |
 | route53_nameservers    | Route53 zone nameservers (only when zone is created)   |
