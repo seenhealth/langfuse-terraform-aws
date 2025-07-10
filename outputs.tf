@@ -40,6 +40,11 @@ output "public_subnet_ids" {
   value       = module.vpc.public_subnets
 }
 
+output "private_route_table_ids" {
+  description = "Private route table IDs from the VPC module"
+  value       = module.vpc.private_route_table_ids
+}
+
 output "bucket_name" {
   description = "Name of the S3 bucket for Langfuse"
   value       = aws_s3_bucket.langfuse.bucket
