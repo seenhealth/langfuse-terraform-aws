@@ -41,6 +41,7 @@ postgresql:
     secretKeys:
       userPasswordKey: postgres-password
 clickhouse:
+  replicaCount: ${var.clickhouse_instance_count}
   auth:
     existingSecret: langfuse
     existingSecretKey: clickhouse-password
@@ -54,6 +55,7 @@ clickhouse:
       memory: "${var.clickhouse_memory}"
   # Resource configuration for ClickHouse Keeper
   zookeeper:
+    replicaCount: ${var.clickhouse_instance_count}
     resources:
       limits:
         cpu: "${var.clickhouse_keeper_cpu}"

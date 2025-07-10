@@ -1,3 +1,6 @@
+# .claude
+.claude/settings.local.json
+
 # Created by https://www.toptal.com/developers/gitignore/api/terraform,terragrunt,intellij+all,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=terraform,terragrunt,intellij+all,visualstudiocode
 
