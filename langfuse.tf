@@ -82,7 +82,7 @@ redis:
     enabled: true
 s3:
   deploy: false
-  bucket: ${aws_s3_bucket.langfuse.id}
+  bucket: ${local.bucket_id}
   region: ${data.aws_region.current.id}
   forcePathStyle: false
   eventUpload:

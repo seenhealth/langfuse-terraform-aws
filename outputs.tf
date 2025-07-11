@@ -47,12 +47,17 @@ output "private_route_table_ids" {
 
 output "bucket_name" {
   description = "Name of the S3 bucket for Langfuse"
-  value       = aws_s3_bucket.langfuse.bucket
+  value       = local.bucket_name
 }
 
 output "bucket_id" {
   description = "ID of the S3 bucket for Langfuse"
-  value       = aws_s3_bucket.langfuse.id
+  value       = local.bucket_id
+}
+
+output "bucket_arn" {
+  description = "ARN of the S3 bucket for Langfuse"
+  value       = local.bucket_arn
 }
 
 output "certificate_arn" {
