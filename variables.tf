@@ -157,3 +157,16 @@ variable "existing_certificate_arn" {
   type        = string
   default     = null
 }
+
+variable "google_client_id" {
+  description = "Google OAuth client ID for authentication"
+  type        = string
+  default     = null
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth client secret for authentication"
+  type        = string
+  default     = null
+  sensitive   = true
+}
