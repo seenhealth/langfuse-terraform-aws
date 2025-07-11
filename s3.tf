@@ -1,28 +1,44 @@
+data "aws_s3_bucket" "langfuse" {
+  count  = var.bucket_name != null ? 1 : 0
+  bucket = var.bucket_name
+}
+
 locals {
   # Convert domain to bucket-friendly format (e.g., company.com -> company-com)
   bucket_prefix = replace(var.domain, ".", "-")
+  
+  # Determine bucket name - use provided name or generate from domain
+  resolved_bucket_name = var.bucket_name != null ? var.bucket_name : "${local.bucket_prefix}-${var.name}"
+  
+  # Use existing bucket if bucket_name is provided, otherwise use created bucket
+  bucket_arn = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].arn : aws_s3_bucket.langfuse[0].arn
+  bucket_name = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].bucket : aws_s3_bucket.langfuse[0].bucket
+  bucket_id = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].id : aws_s3_bucket.langfuse[0].id
 }
 
 resource "aws_s3_bucket" "langfuse" {
-  bucket = "${local.bucket_prefix}-${var.name}"
+  count  = var.bucket_name == null ? 1 : 0
+  bucket = local.resolved_bucket_name
 
   # Add tags for better resource management
   tags = {
-    Name    = "${local.bucket_prefix}-${var.name}"
+    Name    = local.resolved_bucket_name
     Domain  = var.domain
     Service = "langfuse"
   }
 }
 
 resource "aws_s3_bucket_versioning" "langfuse" {
-  bucket = aws_s3_bucket.langfuse.id
+  count  = var.bucket_name == null ? 1 : 0
+  bucket = aws_s3_bucket.langfuse[0].id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 resource "aws_s3_bucket_public_access_block" "langfuse" {
-  bucket = aws_s3_bucket.langfuse.id
+  count  = var.bucket_name == null ? 1 : 0
+  bucket = aws_s3_bucket.langfuse[0].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -32,7 +48,8 @@ resource "aws_s3_bucket_public_access_block" "langfuse" {
 
 # Add lifecycle rules for cost optimization
 resource "aws_s3_bucket_lifecycle_configuration" "langfuse" {
-  bucket = aws_s3_bucket.langfuse.id
+  count  = var.bucket_name == null ? 1 : 0
+  bucket = aws_s3_bucket.langfuse[0].id
 
   # https://aws.amazon.com/s3/storage-classes/
   # Transition to "STANDARD Infrequent Access" after 90 days, and
@@ -99,8 +116,8 @@ resource "aws_iam_role_policy" "langfuse_s3_access" {
           "s3:DeleteObject"
         ]
         Resource = [
-          aws_s3_bucket.langfuse.arn,
-          "${aws_s3_bucket.langfuse.arn}/*"
+          local.bucket_arn,
+          "${local.bucket_arn}/*"
         ]
       }
     ]

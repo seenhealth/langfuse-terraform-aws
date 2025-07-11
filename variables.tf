@@ -170,3 +170,9 @@ variable "google_client_secret" {
   default     = null
   sensitive   = true
 }
+
+variable "bucket_name" {
+  description = "Name of existing S3 bucket to use. If not provided, a new bucket will be created."
+  type        = string
+  default     = null
+}
