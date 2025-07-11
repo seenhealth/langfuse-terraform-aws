@@ -233,6 +233,19 @@ variable "existing_certificate_arn" {
   default     = null
 }
 
+variable "google_client_id" {
+  description = "Google OAuth client ID for authentication"
+  type        = string
+  default     = null
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth client secret for authentication"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 # Additional environment variables
 variable "additional_env" {
   description = "Additional environment variables to set on Langfuse pods"

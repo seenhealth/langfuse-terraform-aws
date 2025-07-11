@@ -1,5 +1,6 @@
 locals {
   inbound_cidrs_csv = join(",", var.ingress_inbound_cidrs)
+  enable_google_auth = var.google_client_id != null && var.google_client_secret != null
   langfuse_values   = <<EOT
 global:
   defaultStorageClass: efs
@@ -14,6 +15,11 @@ langfuse:
       secretKeyRef:
         name: langfuse
         key: nextauth-secret
+%{if local.enable_google_auth}
+  env:
+    GOOGLE_CLIENT_ID: "${var.google_client_id}"
+    GOOGLE_CLIENT_SECRET: "${var.google_client_secret}"
+%{endif}
   serviceAccount:
     annotations:
       eks.amazonaws.com/role-arn: ${aws_iam_role.langfuse_irsa.arn}
