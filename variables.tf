@@ -171,6 +171,12 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "bucket_name" {
+  description = "Name of existing S3 bucket to use. If not provided, a new bucket will be created."
+  type        = string
+  default     = null
+}
+
 # Additional environment variables
 variable "additional_env" {
   description = "Additional environment variables to set on Langfuse pods"
