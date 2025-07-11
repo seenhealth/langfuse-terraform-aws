@@ -1,7 +1,7 @@
 locals {
-  inbound_cidrs_csv = join(",", var.ingress_inbound_cidrs)
+  inbound_cidrs_csv  = join(",", var.ingress_inbound_cidrs)
   enable_google_auth = var.google_client_id != null && var.google_client_secret != null
-  langfuse_values   = <<EOT
+  langfuse_values    = <<EOT
 global:
   defaultStorageClass: efs
 langfuse:
@@ -16,9 +16,25 @@ langfuse:
         name: langfuse
         key: nextauth-secret
 %{if local.enable_google_auth}
-  env:
-    GOOGLE_CLIENT_ID: "${var.google_client_id}"
-    GOOGLE_CLIENT_SECRET: "${var.google_client_secret}"
+  additionalEnv:
+    - name: AUTH_GOOGLE_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: langfuse
+          key: google-client-id
+    - name: AUTH_GOOGLE_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: langfuse
+          key: google-client-secret
+    - name: AUTH_GOOGLE_ALLOW_ACCOUNT_LINKING
+      value: "true"
+    - name: AUTH_DISABLE_USERNAME_PASSWORD
+      value: "${var.disable_username_password}"
+%{if var.google_allowed_domains != null}
+    - name: AUTH_GOOGLE_ALLOWED_DOMAINS
+      value: "${var.google_allowed_domains}"
+%{endif}
 %{endif}
   serviceAccount:
     annotations:
@@ -114,7 +130,7 @@ langfuse:
 %{endfor~}
 EOT
 
-  ingress_values    = <<EOT
+  ingress_values     = <<EOT
 langfuse:
   ingress:
     enabled: true
@@ -132,12 +148,12 @@ langfuse:
       - path: /
         pathType: Prefix
 EOT
-  encryption_values = var.use_encryption_key == false ? "" : <<EOT
+  encryption_values  = var.use_encryption_key == false ? "" : <<EOT
 langfuse:
   encryptionKey:
     secretKeyRef:
       name: ${kubernetes_secret.langfuse.metadata[0].name}
-      key: encryption_key
+      key: encryption-key
 EOT
 }
 
@@ -170,14 +186,17 @@ resource "kubernetes_secret" "langfuse" {
   }
 
   data = {
-    "redis-password"      = random_password.redis_password.result
-    "postgres-password"   = random_password.postgres_password.result
-    "salt"                = random_bytes.salt.base64
-    "nextauth-secret"     = random_bytes.nextauth_secret.base64
-    "clickhouse-password" = random_password.clickhouse_password.result
-    "encryption_key"      = var.use_encryption_key ? random_bytes.encryption_key[0].hex : ""
+    "redis-password"       = random_password.redis_password.result
+    "postgres-password"    = random_password.postgres_password.result
+    "salt"                 = random_bytes.salt.base64
+    "nextauth-secret"      = random_bytes.nextauth_secret.base64
+    "clickhouse-password"  = random_password.clickhouse_password.result
+    "encryption-key"       = var.use_encryption_key ? random_bytes.encryption_key[0].hex : ""
+    "google-client-id"     = var.google_client_id != null ? var.google_client_id : ""
+    "google-client-secret" = var.google_client_secret != null ? var.google_client_secret : ""
   }
 }
+
 
 resource "helm_release" "langfuse" {
   name             = "langfuse"

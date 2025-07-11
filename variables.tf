@@ -171,10 +171,22 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "google_allowed_domains" {
+  description = "Comma-separated list of allowed domains for Google OAuth"
+  type        = string
+  default     = null
+}
+
 variable "bucket_name" {
   description = "Name of existing S3 bucket to use. If not provided, a new bucket will be created."
   type        = string
   default     = null
+}
+
+variable "disable_username_password" {
+  description = "Whether to disable username/password authentication in Langfuse"
+  type        = bool
+  default     = false
 }
 
 # Additional environment variables
