@@ -14,7 +14,7 @@ This module aims to provide a production-ready, secure, and scalable deployment 
 
 ```hcl
 module "langfuse" {
-  source = "github.com/langfuse/langfuse-terraform-aws?ref=0.3.2"
+  source = "github.com/langfuse/langfuse-terraform-aws?ref=0.4.0"
 
   domain = "langfuse.example.com"
 
@@ -43,7 +43,7 @@ module "langfuse" {
   cache_instance_count = 2
 
   # Optional: Configure Langfuse Helm chart version
-  langfuse_helm_chart_version = "1.2.15"
+  langfuse_helm_chart_version = "1.3.3"
 
   # Optional: Add additional environment variables
   additional_env = [
@@ -223,7 +223,7 @@ This module creates a complete Langfuse stack with the following components:
 ## Inputs
 
 | Name                       | Description                                                                                    | Type         | Default                                | Required |
-| -------------------------- | ---------------------------------------------------------------------------------------------- | ------------ | -------------------------------------- | :------: |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |----------------------------------------| :------: |
 | name                       | Name prefix for resources                                                                      | string       | "langfuse"                             |    no    |
 | domain                     | Domain name used for resource naming                                                           | string       | n/a                                    |   yes    |
 | vpc_cidr                   | CIDR block for VPC                                                                             | string       | "10.0.0.0/16"                          |    no    |
@@ -236,7 +236,7 @@ This module creates a complete Langfuse stack with the following components:
 | postgres_max_capacity      | Maximum ACU capacity for PostgreSQL Serverless v2                                              | number       | 2.0                                    |    no    |
 | cache_node_type            | ElastiCache node type                                                                          | string       | "cache.t4g.small"                      |    no    |
 | cache_instance_count       | Number of ElastiCache instances                                                                | number       | 1                                      |    no    |
-| langfuse_helm_chart_version | Version of the Langfuse Helm chart to deploy                                                  | string       | "1.2.15"                                |    no    |
+| langfuse_helm_chart_version | Version of the Langfuse Helm chart to deploy                                                  | string       | "1.3.3"                                |    no    |
 | langfuse_cpu               | CPU allocation for Langfuse containers                                                        | string       | "2"                                    |    no    |
 | langfuse_memory            | Memory allocation for Langfuse containers                                                     | string       | "4Gi"                                  |    no    |
 | clickhouse_cpu             | CPU allocation for ClickHouse containers                                                      | string       | "2"                                    |    no    |
