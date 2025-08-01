@@ -88,7 +88,7 @@ variable "use_single_nat_gateway" {
 variable "langfuse_helm_chart_version" {
   description = "Version of the Langfuse Helm chart to deploy"
   type        = string
-  default     = "1.3.3"
+  default     = "1.3.4"
 }
 
 # Resource configuration variables
