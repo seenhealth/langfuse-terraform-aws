@@ -22,9 +22,15 @@ variable "kubernetes_version" {
 }
 
 variable "use_encryption_key" {
-  description = "Wheter or not to use an Encryption key for LLM API credential and integration credential store"
+  description = "Whether to use an Encryption key for LLM API credential and integration credential store"
   type        = bool
   default     = true
+}
+
+variable "enable_clickhouse_log_tables" {
+  description = "Whether to enable Clickhouse logging tables. Having them active produces a high base-load on the EFS filesystem."
+  type        = bool
+  default     = false
 }
 
 variable "postgres_instance_count" {
@@ -106,20 +112,20 @@ variable "langfuse_memory" {
 
 variable "langfuse_web_replicas" {
   description = "Number of replicas for Langfuse web container"
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   validation {
-    condition = var.langfuse_web_replicas > 0
+    condition     = var.langfuse_web_replicas > 0
     error_message = "There must be at least one Langfuse web replica."
   }
 }
 
 variable "langfuse_worker_replicas" {
   description = "Number of replicas for Langfuse worker container"
-  type = number
-  default = 1
+  type        = number
+  default     = 1
   validation {
-    condition = var.langfuse_worker_replicas > 0
+    condition     = var.langfuse_worker_replicas > 0
     error_message = "There must be at least one Langfuse worker replica."
   }
 }
@@ -129,7 +135,7 @@ variable "clickhouse_replicas" {
   type        = number
   default     = 3
   validation {
-    condition = var.clickhouse_replicas > 1
+    condition     = var.clickhouse_replicas > 1
     error_message = "There must be at least two clickhouse replicas for high availability."
   }
 }
