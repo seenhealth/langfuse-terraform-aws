@@ -174,8 +174,8 @@ variable "clickhouse_replicas" {
   type        = number
   default     = 3
   validation {
-    condition     = var.clickhouse_replicas > 1
-    error_message = "There must be at least two clickhouse replicas for high availability."
+    condition     = var.clickhouse_replicas >= 1
+    error_message = "There must be at least one ClickHouse replica."
   }
 }
 
