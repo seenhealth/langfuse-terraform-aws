@@ -216,3 +216,14 @@ variable "additional_env" {
     error_message = "Each environment variable must have either 'value' or 'valueFrom' specified, but not both."
   }
 }
+
+variable "efs_throughput_mode" {
+  description = "EFS throughput mode. Use 'bursting' for cost savings or 'elastic' for high IO workloads"
+  type        = string
+  default     = "bursting"
+
+  validation {
+    condition     = contains(["bursting", "elastic", "provisioned"], var.efs_throughput_mode)
+    error_message = "efs_throughput_mode must be one of: bursting, elastic, provisioned"
+  }
+}
