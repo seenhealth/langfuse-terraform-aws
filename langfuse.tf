@@ -133,7 +133,7 @@ langfuse:
 %{endfor~}
 EOT
 
-  ingress_values     = <<EOT
+  ingress_values    = <<EOT
 langfuse:
   ingress:
     enabled: true
@@ -151,7 +151,7 @@ langfuse:
       - path: /
         pathType: Prefix
 EOT
-  encryption_values  = var.use_encryption_key == false ? "" : <<EOT
+  encryption_values = var.use_encryption_key == false ? "" : <<EOT
 langfuse:
   encryptionKey:
     secretKeyRef:

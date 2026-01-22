@@ -6,14 +6,14 @@ data "aws_s3_bucket" "langfuse" {
 locals {
   # Convert domain to bucket-friendly format (e.g., company.com -> company-com)
   bucket_prefix = replace(var.domain, ".", "-")
-  
+
   # Determine bucket name - use provided name or generate from domain
   resolved_bucket_name = var.bucket_name != null ? var.bucket_name : "${local.bucket_prefix}-${var.name}"
-  
+
   # Use existing bucket if bucket_name is provided, otherwise use created bucket
-  bucket_arn = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].arn : aws_s3_bucket.langfuse[0].arn
+  bucket_arn  = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].arn : aws_s3_bucket.langfuse[0].arn
   bucket_name = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].bucket : aws_s3_bucket.langfuse[0].bucket
-  bucket_id = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].id : aws_s3_bucket.langfuse[0].id
+  bucket_id   = var.bucket_name != null ? data.aws_s3_bucket.langfuse[0].id : aws_s3_bucket.langfuse[0].id
 }
 
 resource "aws_s3_bucket" "langfuse" {
