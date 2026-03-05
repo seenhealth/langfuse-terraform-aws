@@ -80,7 +80,7 @@ clickhouse:
       memory: "${var.clickhouse_memory}"
   # Resource configuration for ClickHouse Keeper
   zookeeper:
-    replicaCount: ${var.clickhouse_replicas}
+    replicaCount: ${var.clickhouse_replicas > 1 ? var.clickhouse_replicas : 0}
     resources:
       limits:
         cpu: "${var.clickhouse_keeper_cpu}"
