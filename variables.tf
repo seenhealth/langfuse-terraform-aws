@@ -60,6 +60,17 @@ variable "kubernetes_version" {
   default     = "1.32"
 }
 
+variable "cluster_upgrade_support_type" {
+  description = "Controls the EKS cluster's upgrade_policy.support_type. STANDARD lets AWS auto-upgrade the control plane at the end of standard support, avoiding the extended-support surcharge. EXTENDED keeps the current Kubernetes version past standard-support EOL and pays AWS's extended-support surcharge."
+  type        = string
+  default     = "STANDARD"
+
+  validation {
+    condition     = contains(["STANDARD", "EXTENDED"], var.cluster_upgrade_support_type)
+    error_message = "cluster_upgrade_support_type must be one of: STANDARD, EXTENDED"
+  }
+}
+
 variable "use_encryption_key" {
   description = "Whether to use an Encryption key for LLM API credential and integration credential store"
   type        = bool
