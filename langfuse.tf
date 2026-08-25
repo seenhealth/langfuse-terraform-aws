@@ -1,10 +1,49 @@
 locals {
   inbound_cidrs_csv  = join(",", var.ingress_inbound_cidrs)
   enable_google_auth = var.google_client_id != null && var.google_client_secret != null
-  langfuse_values    = <<EOT
-global:
-  defaultStorageClass: efs
+  google_env = concat(
+    local.enable_google_auth ? [
+      {
+        name  = "AUTH_GOOGLE_CLIENT_ID"
+        value = null
+        valueFrom = {
+          secretKeyRef = {
+            name = "langfuse"
+            key  = "google-client-id"
+          }
+        }
+      },
+      {
+        name  = "AUTH_GOOGLE_CLIENT_SECRET"
+        value = null
+        valueFrom = {
+          secretKeyRef = {
+            name = "langfuse"
+            key  = "google-client-secret"
+          }
+        }
+      },
+      {
+        name  = "AUTH_GOOGLE_ALLOW_ACCOUNT_LINKING"
+        value = "true"
+      },
+      {
+        name  = "AUTH_DISABLE_USERNAME_PASSWORD"
+        value = tostring(var.disable_username_password)
+      },
+    ] : [],
+    local.enable_google_auth && var.google_allowed_domains != null ? [
+      {
+        name  = "AUTH_GOOGLE_ALLOWED_DOMAINS"
+        value = var.google_allowed_domains
+      }
+    ] : []
+  )
+  merged_additional_env = concat(local.google_env, var.additional_env)
+  langfuse_values       = <<EOT
 langfuse:
+  image:
+    tag: ${jsonencode(var.app_version)}
   salt:
     secretKeyRef:
       name: langfuse
@@ -15,27 +54,6 @@ langfuse:
       secretKeyRef:
         name: langfuse
         key: nextauth-secret
-%{if local.enable_google_auth}
-  additionalEnv:
-    - name: AUTH_GOOGLE_CLIENT_ID
-      valueFrom:
-        secretKeyRef:
-          name: langfuse
-          key: google-client-id
-    - name: AUTH_GOOGLE_CLIENT_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: langfuse
-          key: google-client-secret
-    - name: AUTH_GOOGLE_ALLOW_ACCOUNT_LINKING
-      value: "true"
-    - name: AUTH_DISABLE_USERNAME_PASSWORD
-      value: "${var.disable_username_password}"
-%{if var.google_allowed_domains != null}
-    - name: AUTH_GOOGLE_ALLOWED_DOMAINS
-      value: "${var.google_allowed_domains}"
-%{endif}
-%{endif}
   serviceAccount:
     annotations:
       eks.amazonaws.com/role-arn: ${aws_iam_role.langfuse_irsa.arn}
@@ -65,29 +83,6 @@ postgresql:
     existingSecret: langfuse
     secretKeys:
       userPasswordKey: postgres-password
-clickhouse:
-  auth:
-    existingSecret: langfuse
-    existingSecretKey: clickhouse-password
-  replicaCount: ${var.clickhouse_replicas}
-  # Resource configuration for ClickHouse containers
-  resources:
-    limits:
-      cpu: "${var.clickhouse_cpu}"
-      memory: "${var.clickhouse_memory}"
-    requests:
-      cpu: "${var.clickhouse_cpu}"
-      memory: "${var.clickhouse_memory}"
-  # Resource configuration for ClickHouse Keeper
-  zookeeper:
-    replicaCount: ${var.clickhouse_replicas}
-    resources:
-      limits:
-        cpu: "${var.clickhouse_keeper_cpu}"
-        memory: "${var.clickhouse_keeper_memory}"
-      requests:
-        cpu: "${var.clickhouse_keeper_cpu}"
-        memory: "${var.clickhouse_keeper_memory}"
 redis:
   deploy: false
   host: ${aws_elasticache_replication_group.redis.primary_endpoint_address}
@@ -109,10 +104,67 @@ s3:
     prefix: "media/"
 EOT
 
-  additional_env_values = length(var.additional_env) == 0 ? "" : <<EOT
+  # In-cluster ClickHouse: the Langfuse Helm chart v2 renders ClickHouseCluster
+  # and KeeperCluster resources reconciled by the ClickHouse operator (see
+  # clickhouse.tf). Storage is backed by the statically provisioned EFS
+  # persistent volumes, so the sizes must match the PV capacities.
+  clickhouse_internal_values = !local.deploy_clickhouse ? "" : <<EOT
+clickhouse:
+  deploy: true
+  auth:
+    existingSecret: langfuse
+    existingSecretKey: clickhouse-password
+  cluster:
+    replicas: ${var.clickhouse_replicas}
+    storage:
+      size: ${var.clickhouse_storage_size}
+      className: efs
+    resources:
+      requests:
+        cpu: "${var.clickhouse_cpu}"
+        memory: "${var.clickhouse_memory}"
+      limits:
+        cpu: "${var.clickhouse_cpu}"
+        memory: "${var.clickhouse_memory}"
+  keeper:
+    replicas: ${local.keeper_replicas}
+    storage:
+      size: ${var.clickhouse_keeper_storage_size}
+      className: efs
+    resources:
+      requests:
+        cpu: "${var.clickhouse_keeper_cpu}"
+        memory: "${var.clickhouse_keeper_memory}"
+      limits:
+        cpu: "${var.clickhouse_keeper_cpu}"
+        memory: "${var.clickhouse_keeper_memory}"
+EOT
+
+  # External ClickHouse: skip the in-cluster deployment (and all EFS
+  # resources) and point Langfuse at the provided instance.
+  clickhouse_external_values = local.deploy_clickhouse ? "" : <<EOT
+clickhouse:
+  deploy: false
+  host: ${jsonencode(var.external_clickhouse.host)}
+  httpPort: ${var.external_clickhouse.http_port}
+  nativePort: ${var.external_clickhouse.native_port}
+  database: ${jsonencode(var.external_clickhouse.database)}
+  cluster:
+    enabled: ${var.external_clickhouse.cluster_enabled}
+  auth:
+    username: ${jsonencode(var.external_clickhouse.username)}
+    existingSecret: langfuse
+    existingSecretKey: clickhouse-password
+  migration:
+    ssl: ${var.external_clickhouse.migration_ssl}
+EOT
+
+  clickhouse_values = local.deploy_clickhouse ? local.clickhouse_internal_values : local.clickhouse_external_values
+
+  additional_env_values = length(local.merged_additional_env) == 0 ? "" : <<EOT
 langfuse:
   additionalEnv:
-%{for env in var.additional_env~}
+%{for env in local.merged_additional_env~}
     - name: ${env.name}
 %{if env.value != null~}
       value: "${env.value}"
@@ -159,25 +211,27 @@ langfuse:
       key: encryption-key
 EOT
 
+  # The settings map is rendered into a config.d file by the ClickHouse
+  # operator; the "@remove" keys translate to the XML remove="1" attribute.
   # We could also consider excluding the following tables on opt-out:
-  # <query_log remove="1"/>
-  # <processors_profile_log remove="1"/>
-  # <part_log remove="1"/>
-  # <query_views_log remove="1"/>
-  # <asynchronous_insert_log remove="1"/>
-  # <query_metric_log remove="1"/>
-  # <error_log remove="1"/>
-  clickhouse_overwrite_values = var.enable_clickhouse_log_tables ? "" : <<EOT
+  # query_log, processors_profile_log, part_log, query_views_log,
+  # asynchronous_insert_log, query_metric_log, error_log
+  clickhouse_overwrite_values = var.enable_clickhouse_log_tables || !local.deploy_clickhouse ? "" : <<EOT
 clickhouse:
-  extraOverrides: |
-      <clickhouse>
-        <trace_log remove="1"/>
-        <text_log remove="1"/>
-        <opentelemetry_span_log remove="1"/>
-        <asynchronous_metric_log remove="1"/>
-        <metric_log remove="1"/>
-        <latency_log remove="1"/>
-      </clickhouse>
+  cluster:
+    settings:
+      trace_log:
+        "@remove": "1"
+      text_log:
+        "@remove": "1"
+      opentelemetry_span_log:
+        "@remove": "1"
+      asynchronous_metric_log:
+        "@remove": "1"
+      metric_log:
+        "@remove": "1"
+      latency_log:
+        "@remove": "1"
 EOT
 }
 
@@ -214,13 +268,12 @@ resource "kubernetes_secret" "langfuse" {
     "postgres-password"    = random_password.postgres_password.result
     "salt"                 = random_bytes.salt.base64
     "nextauth-secret"      = random_bytes.nextauth_secret.base64
-    "clickhouse-password"  = random_password.clickhouse_password.result
+    "clickhouse-password"  = local.deploy_clickhouse ? random_password.clickhouse_password.result : var.external_clickhouse_password
     "encryption-key"       = var.use_encryption_key ? random_bytes.encryption_key[0].hex : ""
     "google-client-id"     = var.google_client_id != null ? var.google_client_id : ""
     "google-client-secret" = var.google_client_secret != null ? var.google_client_secret : ""
   }
 }
-
 
 resource "helm_release" "langfuse" {
   name       = "langfuse"
@@ -231,6 +284,7 @@ resource "helm_release" "langfuse" {
 
   values = compact([
     local.langfuse_values,
+    local.clickhouse_values,
     local.ingress_values,
     local.encryption_values,
     local.additional_env_values,
@@ -243,9 +297,16 @@ resource "helm_release" "langfuse" {
     aws_iam_role_policy.langfuse_s3_access,
     aws_eks_fargate_profile.namespaces,
     kubernetes_persistent_volume.clickhouse_data,
-    kubernetes_persistent_volume.clickhouse_zookeeper,
+    kubernetes_persistent_volume.clickhouse_keeper,
     kubernetes_service_account.aws_load_balancer_controller,
-    helm_release.aws_load_balancer_controller
+    helm_release.aws_load_balancer_controller,
+    helm_release.clickhouse_operator,
   ]
-}
 
+  lifecycle {
+    precondition {
+      condition     = var.external_clickhouse == null || var.external_clickhouse_password != ""
+      error_message = "external_clickhouse_password must be set when external_clickhouse is configured."
+    }
+  }
+}
