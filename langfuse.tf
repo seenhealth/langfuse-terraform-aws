@@ -127,7 +127,7 @@ clickhouse:
         cpu: "${var.clickhouse_cpu}"
         memory: "${var.clickhouse_memory}"
   keeper:
-    replicas: ${var.clickhouse_keeper_replicas}
+    replicas: ${local.keeper_replicas}
     storage:
       size: ${var.clickhouse_keeper_storage_size}
       className: efs

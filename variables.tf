@@ -182,6 +182,12 @@ variable "langfuse_worker_replicas" {
   }
 }
 
+variable "clickhouse_instance_count" {
+  description = "Deprecated alias kept for existing Seen callers. Ignored; ClickHouse PV and Helm replica counts follow clickhouse_replicas."
+  type        = number
+  default     = null
+}
+
 variable "clickhouse_replicas" {
   description = "Number of ClickHouse replicas (single shard). The default of 3 provides a highly available setup. Only used when ClickHouse is deployed in-cluster."
   type        = number
@@ -193,12 +199,12 @@ variable "clickhouse_replicas" {
 }
 
 variable "clickhouse_keeper_replicas" {
-  description = "Number of ClickHouse Keeper replicas. Must be 1, 3 or 5 to maintain quorum. Only used when ClickHouse is deployed in-cluster."
+  description = "Number of ClickHouse Keeper replicas. Must be 1, 3 or 5 to maintain quorum. Null follows clickhouse_replicas when that value is 1, 3 or 5 (the fork's previous ZooKeeper behavior). Only used when ClickHouse is deployed in-cluster."
   type        = number
-  default     = 3
+  default     = null
 
   validation {
-    condition     = contains([1, 3, 5], var.clickhouse_keeper_replicas)
+    condition     = var.clickhouse_keeper_replicas == null || contains([1, 3, 5], var.clickhouse_keeper_replicas)
     error_message = "clickhouse_keeper_replicas must be 1, 3 or 5."
   }
 }

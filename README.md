@@ -312,7 +312,7 @@ Earlier versions of this module deployed Langfuse v3 with the Bitnami-based Helm
 1. Migrate the chart deployment (copying the ClickHouse data) following the [chart v1 → v2 migration guide](https://github.com/langfuse/langfuse-k8s/tree/main/examples/upgrade-v1-to-v2).
 2. Upgrade the application following the [Langfuse v3 → v4 upgrade guide](https://langfuse.com/self-hosting/upgrade/upgrade-guides/upgrade-v3-to-v4).
 
-The `clickhouse_instance_count` variable was removed: the number of EFS access points and persistent volumes now follows `clickhouse_replicas` and the new `clickhouse_keeper_replicas` variable. New installations are unaffected. If you need to stay on the Bitnami-based deployment for now, pin this module to `0.9.0-seen`.
+The `clickhouse_instance_count` argument is still accepted (Seen callers pass it) but ignored: PV and Helm replica counts follow `clickhouse_replicas`. Keeper count follows `clickhouse_replicas` when that value is 1, 3 or 5, matching the fork's previous ZooKeeper replica behavior. New installations are unaffected. If you need to stay on the Bitnami-based deployment for now, pin this module to `0.9.0-seen`.
 
 ## Requirements
 
@@ -379,7 +379,7 @@ The `clickhouse_instance_count` variable was removed: the number of EFS access p
 | langfuse_web_replicas        | Number of replicas for Langfuse web container                                                                    | number       | 1                                      |    no    |
 | langfuse_worker_replicas     | Number of replicas for Langfuse worker container                                                                 | number       | 1                                      |    no    |
 | clickhouse_replicas          | Number of in-cluster ClickHouse replicas (single shard)                                                          | number       | 3                                      |    no    |
-| clickhouse_keeper_replicas   | Number of ClickHouse Keeper replicas (1, 3 or 5)                                                                 | number       | 3                                      |    no    |
+| clickhouse_keeper_replicas   | Number of ClickHouse Keeper replicas (1, 3 or 5). Null follows clickhouse_replicas when that is 1, 3 or 5.       | number       | null                                   |    no    |
 | clickhouse_cpu               | CPU allocation for ClickHouse containers                                                                         | string       | "2"                                    |    no    |
 | clickhouse_memory            | Memory allocation for ClickHouse containers                                                                      | string       | "8Gi"                                  |    no    |
 | clickhouse_keeper_cpu        | CPU allocation for ClickHouse Keeper containers                                                                  | string       | "1"                                    |    no    |

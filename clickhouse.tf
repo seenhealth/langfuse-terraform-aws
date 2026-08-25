@@ -11,6 +11,10 @@ resource "random_password" "clickhouse_password" {
 locals {
   # Deploy ClickHouse into the EKS cluster unless an external one is configured
   deploy_clickhouse = var.external_clickhouse == null
+  keeper_replicas = coalesce(
+    var.clickhouse_keeper_replicas,
+    contains([1, 3, 5], var.clickhouse_replicas) ? var.clickhouse_replicas : 3
+  )
 }
 
 # cert-manager issues the TLS certificates for the ClickHouse operator's
@@ -82,7 +86,7 @@ resource "aws_efs_access_point" "clickhouse" {
 
 # EFS Access Points for ClickHouse Keeper instances
 resource "aws_efs_access_point" "keeper" {
-  count          = local.deploy_clickhouse ? var.clickhouse_keeper_replicas : 0
+  count          = local.deploy_clickhouse ? local.keeper_replicas : 0
   file_system_id = aws_efs_file_system.langfuse[0].id
 
   root_directory {
@@ -140,7 +144,7 @@ resource "kubernetes_persistent_volume" "clickhouse_data" {
 }
 
 resource "kubernetes_persistent_volume" "clickhouse_keeper" {
-  count = local.deploy_clickhouse ? var.clickhouse_keeper_replicas : 0
+  count = local.deploy_clickhouse ? local.keeper_replicas : 0
 
   metadata {
     name = "clickhouse-keeper-${count.index}"
